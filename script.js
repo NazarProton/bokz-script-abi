@@ -23,12 +23,13 @@
       console.log('Wallet detected in storage:', walletAddress);
 
       const provider = new ethers.BrowserProvider(window.ethereum);
-      const signer = await provider.getSigner();
+      // const signer = await provider.getSigner();
       const contract = new ethers.Contract(
         contractAddress,
         contractABI,
-        signer
+        walletAddress
       );
+      console.log(contract);
 
       console.log('Fetching balance for:', walletAddress);
 
