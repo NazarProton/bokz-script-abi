@@ -13,7 +13,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   console.log('Connected wallet:', address);
 
   const contract = new ethers.Contract(
-    '0x3126BAB537896809Bb8D60c0970D58C44D77D348',
+    '0x3126BAB537896809Bb8D60c0970D58C44D77D348', // Адреса контракту
     [
       {
         constant: true,
@@ -22,9 +22,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         outputs: [{ name: '', type: 'uint256' }],
         type: 'function',
       },
-    ],
-    signer
+    ], // ABI контракту
+    signer // Підписувач
   );
+  console.log(contract); // Має повернути об'єкт контракту
 
   try {
     const balance = await contract.balanceOf(address);
