@@ -15,9 +15,9 @@
     contract: null,
 
     init: async function () {
-      console.log('Smart contract interaction initialized.');
+      console.log('Initializing smart contract...');
 
-      // Перевірка наявності бібліотеки ethers.js
+      // Перевірка наявності ethers.js
       if (typeof ethers === 'undefined') {
         console.error('Ethers.js is not loaded.');
         return;
@@ -34,7 +34,7 @@
         this.provider = new ethers.BrowserProvider(window.ethereum);
         await this.provider.send('eth_requestAccounts', []);
         this.signer = await this.provider.getSigner();
-        console.log('Signer initialized:', await this.signer.getAddress());
+        console.log('Connected wallet:', await this.signer.getAddress());
 
         // Ініціалізація контракту
         this.contract = new ethers.Contract(
@@ -44,13 +44,13 @@
         );
         console.log('Contract initialized:', this.contract.address);
 
-        // Перевірка наявності адреси гаманця у localStorage
+        // Перевірка наявності адреси у localStorage
         const walletAddress = localStorage.getItem('address');
         if (walletAddress) {
-          console.log(`Wallet found in storage: ${walletAddress}`);
+          console.log(`Address found in storage: ${walletAddress}`);
           await this.fetchBalance(walletAddress);
         } else {
-          console.warn('No wallet address found in localStorage.');
+          console.warn('No address found in storage.');
           this.updateBalance('0');
         }
 
@@ -64,7 +64,7 @@
     setupStorageListener: function () {
       window.addEventListener('storage', async (event) => {
         if (event.key === 'address' && event.newValue) {
-          console.log(`New wallet detected in storage: ${event.newValue}`);
+          console.log(`New address detected in storage: ${event.newValue}`);
           await this.fetchBalance(event.newValue);
         }
       });
@@ -77,13 +77,13 @@
           throw new Error('Contract is not initialized.');
         }
 
-        if (!ethers.utils.isAddress(walletAddress)) {
+        if (!ethers.isAddress(walletAddress)) {
           throw new Error('Invalid wallet address.');
         }
 
         // Отримання балансу
         const balance = await this.contract.balanceOf(walletAddress);
-        const formattedBalance = ethers.formatEther(balance);
+        const formattedBalance = ethers.formatEther(balance); // Новий формат у v6.x
         console.log(`Balance for ${walletAddress}: ${formattedBalance}`);
         this.updateBalance(formattedBalance);
       } catch (error) {
@@ -95,7 +95,7 @@
     updateBalance: function (balance) {
       const balanceElement = document.getElementById('user-balance');
       if (balanceElement) {
-        balanceElement.textContent = `${balance} Tokens`;
+        balanceElement.textContent = `${balance} ETH`;
       } else {
         console.warn('Element with ID "user-balance" not found.');
       }
