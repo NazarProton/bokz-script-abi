@@ -40,7 +40,7 @@
         this.contract = new ethers.Contract(
           this.contractAddress,
           this.contractABI,
-          this.signer
+          this.provider
         );
         console.log('Contract initialized:', this.contract.address);
 
