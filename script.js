@@ -30,6 +30,7 @@
 
     async checkAndFetchBalance() {
       const walletAddress = localStorage.getItem('address');
+
       if (!walletAddress) {
         console.warn('No wallet connected in storage.');
         this.updateBalance('0');
