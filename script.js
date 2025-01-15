@@ -17,7 +17,7 @@
       console.log('Smart contract interaction initialized.');
 
       // Check if ethers.js is loaded
-      if (typeof ethers === 'undefined' || !ethers.providers) {
+      if (typeof ethers === 'undefined' || !ethers.BrowserProvider) {
         console.error('Ethers.js is not loaded or providers are unavailable.');
         return;
       }
@@ -29,7 +29,7 @@
       }
 
       // Initialize provider
-      this.provider = new ethers.providers.Web3Provider(window.ethereum);
+      this.provider = new ethers.BrowserProvider(window.ethereum);
       await this.provider.send('eth_requestAccounts', []);
 
       // Initialize contract
