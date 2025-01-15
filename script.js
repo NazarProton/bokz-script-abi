@@ -40,7 +40,7 @@
       );
 
       // Check localStorage for wallet address
-      const walletAddress = localStorage.getItem('wallet');
+      const walletAddress = localStorage.getItem('address');
       if (walletAddress) {
         console.log(`Wallet found in storage: ${walletAddress}`);
         await this.fetchBalance(walletAddress);
@@ -55,7 +55,7 @@
 
     setupStorageListener: function () {
       window.addEventListener('storage', async (event) => {
-        if (event.key === 'wallet' && event.newValue) {
+        if (event.key === 'address' && event.newValue) {
           console.log(`New wallet detected in storage: ${event.newValue}`);
           await this.fetchBalance(event.newValue);
         }
