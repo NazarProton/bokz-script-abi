@@ -22,14 +22,14 @@
 
     setupEventListeners: function () {
       window.addEventListener('storage', (event) => {
-        if (event.key === 'walletAddress' && event.newValue) {
+        if (event.key === 'address' && event.newValue) {
           this.checkAndFetchBalance();
         }
       });
     },
 
     async checkAndFetchBalance() {
-      const walletAddress = localStorage.getItem('walletAddress');
+      const walletAddress = localStorage.getItem('address');
       if (!walletAddress) {
         console.warn('No wallet connected in storage.');
         this.updateBalance('0');
