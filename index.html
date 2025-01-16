@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MetaMask Wallet Connection</title>
+    <!-- Підключаємо ethers.js -->
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.13.5/ethers.umd.js"
+      integrity="sha512-YVnpitEWxmp6nyYXiI0kN/27oaJ+6OuJuovm//MkTzmU7cFsYHj/UQ/sRZaWIejpn2E3kwdrdJgIsTvyje9c3w=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    ></script>
+    <!-- Імпортуємо локальний скрипт -->
+    <script type="module" src="script.js" defer></script>
+  </head>
+  <body>
+    <h1>Token Staking</h1>
+    <div>
+      <button id="fetch-balance">Fetch Balance</button>
+      <div id="user-balance">Balance: Not available</div>
+    </div>
+    <div>
+      <input type="number" id="stake-amount" placeholder="Amount to stake" />
+      <button id="stake-button">Stake Tokens</button>
+    </div>
+    <div>
+      <button id="claim-rewards">Claim Rewards</button>
+    </div>
+    <div>
+      <button id="withdraw-tokens">Withdraw All</button>
+    </div>
+    <div>
+      <button id="start-staking">Start staking</button>
+    </div>
+    <div>
+      <button id="refresh-pool">Refresh pool</button>
+    </div>
+  </body>
+</html>
