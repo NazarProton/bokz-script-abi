@@ -49,11 +49,15 @@ async function stakeTokens(
 
 async function claimRewards(tokenContract, stakingContract, walletAddress) {
   try {
-    const tx = await stakingContract.refreshPool();
-    await tx.wait();
-    console.log('Staking pool refreshed successfully!');
     const pendingReward = await stakingContract.pendingReward(walletAddress);
     console.log(`Pending Rewards: ${pendingReward} BOKZ`);
+
+    const approveTx = await tokenContract.approve(
+      stakingContract.target,
+      pendingReward + pendingReward
+    );
+    await approveTx.wait();
+    console.log('Approval successful.');
 
     const harvestTx = await stakingContract.harvest();
     await harvestTx.wait();
@@ -104,33 +108,13 @@ async function withdrawTokens(tokenContract, stakingContract, walletAddress) {
   }
 }
 
-async function refreshStakingPool(
-  tokenContract,
-  stakingContract,
-  walletAddress
-) {
-  try {
-    console.log('Refreshing the staking pool...');
-    const tx = await stakingContract.refreshPool();
-    await tx.wait();
-    console.log('Staking pool refreshed successfully!');
-    await getBalance(tokenContract, stakingContract, walletAddress);
-  } catch (error) {
-    console.error('Error refreshing staking pool:', error);
-  }
-}
-
-async function main() {
-  const TOKEN_ADDRESS = '0x9015957A2210BB8B10e27d8BBEEF8d9498f123eF';
-  const STAKING_CONTRACT_ADDRESS = '0x9C6c49E1a5108eC5A2111c0b9B62624100d11e3a'; 
-  const PRIVATE_KEY =
-    '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80'; 
-  const HARDCODED_WALLET = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'; 
+async function initializeApp(walletAddress) {
+  const TOKEN_ADDRESS = '0x3Af51A117e726d33737CE632D56Dc520B668000E';
+  const STAKING_CONTRACT_ADDRESS = '0xAdCF2Bff4B107c5B5e02845E9DE713406e2A2f53';
   const tokenABI = [
     'function balanceOf(address account) public view returns (uint256)',
     'function approve(address spender, uint256 amount) public returns (bool)',
   ];
-
   const stakingABI = [
     'function stake(uint256 amount) public',
     'function pendingReward(address account) public view returns (uint256)',
@@ -138,22 +122,27 @@ async function main() {
     'function harvest() public',
     'function unstake(uint256 amount) public',
     'function startStaking(uint256 rewardTokens) external',
-    'function refreshPool() external',
   ];
 
-  const provider = new ethers.JsonRpcProvider('http://127.0.0.1:8545');
-  const wallet = new ethers.Wallet(PRIVATE_KEY, provider);
-  const signer = await provider.getSigner(HARDCODED_WALLET);
+  const provider = new ethers.BrowserProvider(window.ethereum);
+  const signer = await provider.getSigner();
+  console.log(`Initializing contracts for wallet: ${walletAddress}`);
 
-  const tokenContract = new ethers.Contract(TOKEN_ADDRESS, tokenABI, wallet);
+  const tokenContract = new ethers.Contract(TOKEN_ADDRESS, tokenABI, signer);
   const stakingContract = new ethers.Contract(
     STAKING_CONTRACT_ADDRESS,
     stakingABI,
     signer
   );
 
+  document.getElementById(
+    'user-address'
+  ).textContent = `Address: ${walletAddress}`;
+
+  getBalance(tokenContract, stakingContract, walletAddress);
+
   document.getElementById('fetch-balance').addEventListener('click', () => {
-    getBalance(tokenContract, stakingContract, wallet.address);
+    getBalance(tokenContract, stakingContract, walletAddress);
   });
 
   document.getElementById('stake-button').addEventListener('click', () => {
@@ -162,28 +151,53 @@ async function main() {
     stakeTokens(
       tokenContract,
       stakingContract,
-      wallet.address,
+      walletAddress,
       stakeAmountInWei
     );
   });
 
   document.getElementById('claim-rewards').addEventListener('click', () => {
-    claimRewards(tokenContract, stakingContract, wallet.address);
+    claimRewards(tokenContract, stakingContract, walletAddress);
   });
 
   document.getElementById('withdraw-tokens').addEventListener('click', () => {
-    withdrawTokens(tokenContract, stakingContract, wallet.address);
+    withdrawTokens(tokenContract, stakingContract, walletAddress);
   });
+
   document.getElementById('start-staking').addEventListener('click', () => {
-    startStaking(tokenContract, stakingContract, wallet.address);
-  });
-  document.getElementById('refresh-pool').addEventListener('click', () => {
-    refreshStakingPool(tokenContract, stakingContract, wallet.address);
+    startStaking(tokenContract, stakingContract, walletAddress);
   });
 }
 
-main()
-  .then(() => console.log('Script loaded successfully'))
-  .catch((error) => {
-    console.error('Error initializing script:', error);
-  });
+async function connectWallet() {
+  try {
+    const provider = new ethers.BrowserProvider(window.ethereum);
+    const signer = await provider.getSigner();
+    const walletAddress = await signer.getAddress();
+
+    localStorage.setItem('address', walletAddress);
+
+    console.log(`Wallet connected: ${walletAddress}`);
+    initializeApp(walletAddress);
+  } catch (error) {
+    console.error('Error connecting wallet:', error);
+  }
+}
+
+async function main() {
+  const walletInStorage = localStorage.getItem('address');
+
+  if (walletInStorage) {
+    console.log(`Using saved wallet: ${walletInStorage}`);
+    initializeApp(walletInStorage);
+  } else {
+    console.log('No wallet connected. Please connect.');
+    document
+      .getElementById('connect-wallet')
+      .addEventListener('click', connectWallet);
+  }
+}
+
+main().catch((error) => {
+  console.error('Error initializing application:', error);
+});
