@@ -4,18 +4,17 @@ async function getBalance(tokenContract, stakingContract, walletAddress) {
     const stakedInfo = await stakingContract.stakingInfos(walletAddress);
     const pendingReward = await stakingContract.pendingReward(walletAddress);
 
-    document.getElementById(
-      'user-balance'
-    ).textContent = `Balance: ${ethers.formatUnits(
-      tokenBalance,
-      18
-    )} BOKZ | Staked Balance: ${ethers.formatUnits(
-      stakedInfo[0],
-      18
-    )} BOKZ | Pending Reward Balance: ${ethers.formatUnits(
-      pendingReward,
-      18
-    )} BOKZ`;
+    document.getElementById('user-balance').textContent = `${Number(
+      ethers.formatUnits(tokenBalance, 18)
+    ).toFixed(2)}`;
+
+    document.getElementById('staked-balance').textContent = `${Number(
+      ethers.formatUnits(stakedInfo[0], 18)
+    ).toFixed(2)}`;
+    document.getElementById('claim-balance').textContent = `${Number(
+      ethers.formatUnits(pendingReward, 18)
+    ).toFixed(2)}`;
+
     console.log('Balance fetched successfully.');
     return stakedInfo[0];
   } catch (error) {
@@ -49,16 +48,6 @@ async function stakeTokens(
 
 async function claimRewards(tokenContract, stakingContract, walletAddress) {
   try {
-    const pendingReward = await stakingContract.pendingReward(walletAddress);
-    console.log(`Pending Rewards: ${pendingReward} BOKZ`);
-
-    const approveTx = await tokenContract.approve(
-      stakingContract.target,
-      pendingReward + pendingReward
-    );
-    await approveTx.wait();
-    console.log('Approval successful.');
-
     const harvestTx = await stakingContract.harvest();
     await harvestTx.wait();
     console.log('Rewards successfully claimed!');
@@ -68,38 +57,17 @@ async function claimRewards(tokenContract, stakingContract, walletAddress) {
     console.error('Error claiming rewards:', error);
   }
 }
-async function startStaking(tokenContract, stakingContract, walletAddress) {
-  try {
-    const REWARD_TOKENS = ethers.parseUnits('5000', 18);
-    const approveTx = await tokenContract.approve(
-      stakingContract.target,
-      REWARD_TOKENS
-    );
-    await approveTx.wait();
-    console.log('Approval successful.');
-    const tx = await stakingContract.startStaking(REWARD_TOKENS);
-    await tx.wait();
-    console.log('Staking started successfully!');
-
-    await getBalance(tokenContract, stakingContract, walletAddress);
-  } catch (error) {
-    console.error('Error claiming rewards:', error);
-  }
-}
 
 async function withdrawTokens(tokenContract, stakingContract, walletAddress) {
   try {
-    const withdrawAmount = await getBalance(
-      tokenContract,
-      stakingContract,
-      walletAddress
-    );
-    console.log(
-      `Withdrawing ${ethers.formatUnits(withdrawAmount, 18)} tokens...`
-    );
+    const withdrawAmount = document.getElementById('AMOUNT-UNSTAKE').value;
+    const formattedAmount = ethers.parseUnits(withdrawAmount, 18);
 
-    const withdrawTx = await stakingContract.unstake(withdrawAmount);
+    console.log(`Withdrawing ${withdrawAmount} tokens...`);
+
+    const withdrawTx = await stakingContract.unstake(formattedAmount);
     await withdrawTx.wait();
+
     console.log('Tokens successfully withdrawn!');
 
     await getBalance(tokenContract, stakingContract, walletAddress);
@@ -121,7 +89,6 @@ async function initializeApp(walletAddress) {
     'function stakingInfos(address account) public view returns (uint256 stakedAmount, uint256 rewardDebt, uint256 totalAmountRewarded)',
     'function harvest() public',
     'function unstake(uint256 amount) public',
-    'function startStaking(uint256 rewardTokens) external',
   ];
 
   const provider = new ethers.BrowserProvider(window.ethereum);
@@ -135,18 +102,10 @@ async function initializeApp(walletAddress) {
     signer
   );
 
-  document.getElementById(
-    'user-address'
-  ).textContent = `Address: ${walletAddress}`;
-
   getBalance(tokenContract, stakingContract, walletAddress);
 
-  document.getElementById('fetch-balance').addEventListener('click', () => {
-    getBalance(tokenContract, stakingContract, walletAddress);
-  });
-
   document.getElementById('stake-button').addEventListener('click', () => {
-    const stakeAmount = document.getElementById('stake-amount').value;
+    const stakeAmount = document.getElementById('AMOUNT-STAKE').value;
     const stakeAmountInWei = ethers.parseUnits(stakeAmount, 18);
     stakeTokens(
       tokenContract,
@@ -156,32 +115,43 @@ async function initializeApp(walletAddress) {
     );
   });
 
-  document.getElementById('claim-rewards').addEventListener('click', () => {
+  document.getElementById('claim').addEventListener('click', () => {
     claimRewards(tokenContract, stakingContract, walletAddress);
   });
 
   document.getElementById('withdraw-tokens').addEventListener('click', () => {
     withdrawTokens(tokenContract, stakingContract, walletAddress);
   });
-
-  document.getElementById('start-staking').addEventListener('click', () => {
-    startStaking(tokenContract, stakingContract, walletAddress);
-  });
 }
 
-async function connectWallet() {
-  try {
-    const provider = new ethers.BrowserProvider(window.ethereum);
-    const signer = await provider.getSigner();
-    const walletAddress = await signer.getAddress();
+function startWalletChecker(interval = 500) {
+  const intervalId = setInterval(() => {
+    const walletInStorage = localStorage.getItem('address');
 
-    localStorage.setItem('address', walletAddress);
+    if (walletInStorage) {
+      console.log(`Wallet detected: ${walletInStorage}. Initializing app...`);
+      initializeApp(walletInStorage);
+      clearInterval(intervalId);
+      addDisconnectListener();
+    }
+  }, interval);
+}
 
-    console.log(`Wallet connected: ${walletAddress}`);
-    initializeApp(walletAddress);
-  } catch (error) {
-    console.error('Error connecting wallet:', error);
-  }
+function addDisconnectListener() {
+  setTimeout(() => {
+    const disconnectButton = document.querySelector(
+      'button.square-button.w-button'
+    );
+    if (disconnectButton) {
+      disconnectButton.addEventListener('click', () => {
+        console.log('Wallet disconnected. Restarting wallet checker...');
+        localStorage.removeItem('address');
+        startWalletChecker();
+      });
+    } else {
+      console.log('No disconnect button found.');
+    }
+  }, 2000);
 }
 
 async function main() {
@@ -190,11 +160,10 @@ async function main() {
   if (walletInStorage) {
     console.log(`Using saved wallet: ${walletInStorage}`);
     initializeApp(walletInStorage);
+    addDisconnectListener();
   } else {
-    console.log('No wallet connected. Please connect.');
-    document
-      .getElementById('connect-wallet')
-      .addEventListener('click', connectWallet);
+    console.log('No wallet detected. Starting wallet checker...');
+    startWalletChecker();
   }
 }
 
